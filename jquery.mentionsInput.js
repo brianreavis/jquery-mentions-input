@@ -16,6 +16,7 @@
     triggerChar   : '@',
     onDataRequest : $.noop,
     minChars      : 2,
+    maxOptions    : 0,
     showAvatars   : true,
     elastic       : true,
     classes       : {
@@ -292,7 +293,6 @@
     }
 
     function populateDropdown(query, results) {
-      elmAutocompleteList.show();
 
       // Filter items that has already been mentioned
       var mentionValues = _.pluck(mentionsCollection, 'value');
@@ -306,27 +306,28 @@
       }
 
       elmAutocompleteList.empty();
-      var elmDropDownList = $("<ul>").appendTo(elmAutocompleteList).hide();
 
-      _.each(results, function (item, index) {
-        var itemUid = _.uniqueId('mention_');
+      // Assemble items
+      var i, uid, item, elmListItem, elmIcon;
+      var elmDropDownList = $('<ul>').appendTo(elmAutocompleteList).hide();
+      var n = settings.maxOptions ? Math.min(settings.maxOptions, results.length) : results.length;
+      for (i = 0; i < n; i++) {
+        item = results[i];
+        uid = _.uniqueId('mention_');
+        autocompleteItemCollection[uid] = _.extend({}, item, {value: item.name});
 
-        autocompleteItemCollection[itemUid] = _.extend({}, item, {value: item.name});
-
-        var elmListItem = $(settings.templates.autocompleteListItem({
+        elmListItem = $(settings.templates.autocompleteListItem({
           'id'      : utils.htmlEncode(item.id),
           'display' : utils.htmlEncode(item.name),
           'type'    : utils.htmlEncode(item.type),
           'content' : utils.highlightTerm(utils.htmlEncode((item.name)), query)
-        })).attr('data-uid', itemUid);
+        })).attr('data-uid', uid);
 
-        if (index === 0) {
+        if (i === 0) {
           selectAutoCompleteItem(elmListItem);
         }
 
         if (settings.showAvatars) {
-          var elmIcon;
-
           if (item.avatar) {
             elmIcon = $(settings.templates.autocompleteListItemAvatar({ avatar : item.avatar }));
           } else {
@@ -334,9 +335,11 @@
           }
           elmIcon.prependTo(elmListItem);
         }
-        elmListItem = elmListItem.appendTo(elmDropDownList);
-      });
 
+        elmListItem.appendTo(elmDropDownList);
+      }
+
+      // Make visible
       elmAutocompleteList.show();
       elmDropDownList.show();
     }
